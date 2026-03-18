@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hustle Culture Scheduler</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1a1a25;
+    --border: #2a2a3d;
+    --accent: #f5c518;
+    --accent2: #ff4d4d;
+    --green: #00e676;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; line-height: 1; letter-spacing: 2px; }
+  .logo span { color: var(--accent); }
+  .tagline { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; }
+  .badge { background: var(--accent); color: #000; font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700; padding: 6px 12px; letter-spacing: 2px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media(max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 24px;
+  }
+
+  .panel-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .form-group { margin-bottom: 16px; }
+  label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 6px; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #ffd740; }
+  .btn-danger { background: transparent; border: 1px solid var(--accent2); color: var(--accent2); padding: 6px 12px; font-size: 0.6rem; }
+  .btn-danger:hover { background: var(--accent2); color: #fff; }
+  .btn-solve { background: var(--green); color: #000; width: 100%; padding: 16px; font-size: 0.85rem; letter-spacing: 3px; margin-top: 24px; }
+  .btn-solve:hover { background: #69ff9a; }
+
+  .projects-list { max-height: 320px; overflow-y: auto; }
+  .projects-list::-webkit-scrollbar { width: 4px; }
+  .projects-list::-webkit-scrollbar-track { background: var(--surface); }
+  .projects-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .project-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:none; } }
+
+  .project-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    min-width: 32px;
+  }
+  .project-info { flex: 1; }
+  .project-name { font-size: 0.85rem; font-weight: 600; }
+  .project-meta { font-size: 0.7rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
+  .project-reward { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--green); font-weight: 700; }
+
+  /* Results */
+  .results { background: var(--card); border: 1px solid var(--border); padding: 32px; margin-top: 24px; display: none; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+  .earnings-display {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .big-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .big-label { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); padding: 16px; text-align: center; }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.4rem; color: var(--text); font-weight: 700; }
+  .stat-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; font-family: 'Space Mono', monospace; }
+
+  .accepted-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .accepted-chip {
+    background: rgba(0,230,118,0.1);
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    letter-spacing: 1px;
+  }
+  .rejected-chip {
+    background: rgba(255,77,77,0.07);
+    border: 1px solid rgba(255,77,77,0.3);
+    color: var(--accent2);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    letter-spacing: 1px;
+  }
+
+  /* Timeline */
+  .timeline { margin-top: 24px; }
+  .timeline-title { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
+
+  .day-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .day-label { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--muted); min-width: 50px; }
+  .bar-track { flex: 1; height: 24px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .bar-fill {
+    height: 100%;
+    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+    position: relative;
+  }
+  .bar-fill.safe { background: linear-gradient(90deg, #00e676, #00c853); }
+  .bar-fill.warn { background: linear-gradient(90deg, #ff9800, #f57c00); }
+  .bar-fill.critical { background: linear-gradient(90deg, #ff4d4d, #c62828); }
+  .bar-text { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); min-width: 70px; text-align: right; }
+
+  /* Projects on that day chips */
+  .day-projects { display: flex; gap: 4px; flex-wrap: wrap; margin-left: 4px; }
+  .day-chip { font-family: 'Space Mono', monospace; font-size: 0.55rem; background: rgba(245,197,24,0.15); border: 1px solid rgba(245,197,24,0.3); color: var(--accent); padding: 2px 6px; }
+
+  .empty-state { text-align: center; padding: 40px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; letter-spacing: 2px; }
+
+  .algo-note {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    margin-top: 16px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .algo-note strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <div class="logo">HUSTLE<span>.</span>OS</div>
+      <div class="tagline">Mental Bandwidth Optimizer · Fatigue-Aware Scheduler</div>
+    </div>
+    <div class="badge">v1.0 · DP ENGINE</div>
+  </header>
+
+  <div class="grid">
+    <!-- Add Project Panel -->
+    <div class="panel">
+      <div class="panel-title">Add Project</div>
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" id="pname" placeholder="e.g. Product Launch" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Day</label>
+          <input type="number" id="pstart" placeholder="1" min="1" />
+        </div>
+        <div class="form-group">
+          <label>End Day</label>
+          <input type="number" id="pend" placeholder="3" min="1" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Daily Bandwidth Cost</label>
+          <input type="number" id="pcost" placeholder="30" min="1" max="99" />
+        </div>
+        <div class="form-group">
+          <label>Total Reward ($)</label>
+          <input type="number" id="preward" placeholder="500" min="1" />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addProject()">+ Add Project</button>
+
+      <div class="algo-note" style="margin-top:20px;">
+        <strong>Fatigue Rules:</strong> Base capacity = 100 units. Each night you recover 80 units, capped at 100. 
+        You must accept a project for its <em>entire duration</em>. No pausing allowed.
+      </div>
+    </div>
+
+    <!-- Project List Panel -->
+    <div class="panel">
+      <div class="panel-title">Project Queue (<span id="proj-count">0</span>)</div>
+      <div class="projects-list" id="project-list">
+        <div class="empty-state">NO PROJECTS ADDED YET</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-solve" onclick="solve()">⚡ COMPUTE OPTIMAL SCHEDULE</button>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="panel-title">Optimal Schedule</div>
+    <div class="earnings-display">
+      <div>
+        <div class="big-number" id="total-earnings">$0</div>
+        <div class="big-label">Maximum Earnings</div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-val" id="stat-accepted">0</div>
+        <div class="stat-lbl">Accepted</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="stat-rejected">0</div>
+        <div class="stat-lbl">Rejected</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="stat-days">0</div>
+        <div class="stat-lbl">Total Days</div>
+      </div>
+    </div>
+
+    <div class="panel-title">Accepted Projects</div>
+    <div class="accepted-list" id="accepted-list"></div>
+
+    <div class="panel-title" style="margin-top:16px;">Rejected Projects</div>
+    <div class="accepted-list" id="rejected-list"></div>
+
+    <div class="timeline" id="timeline">
+      <div class="timeline-title">Daily Bandwidth Usage</div>
+      <div id="timeline-bars"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────────
+let projects = [];
+let nextId = 1;
+
+// ─── Add Project ──────────────────────────────────────────────────────────────
+function addProject() {
+  const name   = document.getElementById('pname').value.trim() || `Project ${nextId}`;
+  const start  = parseInt(document.getElementById('pstart').value);
+  const end    = parseInt(document.getElementById('pend').value);
+  const cost   = parseInt(document.getElementById('pcost').value);
+  const reward = parseInt(document.getElementById('preward').value);
+
+  if (!start || !end || !cost || !reward) { alert('Please fill all fields.'); return; }
+  if (end < start) { alert('End day must be ≥ Start day.'); return; }
+  if (cost >= 100) { alert('Daily bandwidth cost must be < 100.'); return; }
+
+  projects.push({ id: nextId++, name, start, end, cost, reward });
+  renderList();
+  clearForm();
+}
+
+function clearForm() {
+  ['pname','pstart','pend','pcost','preward'].forEach(id => document.getElementById(id).value = '');
+}
+
+function removeProject(id) {
+  projects = projects.filter(p => p.id !== id);
+  renderList();
+}
+
+function renderList() {
+  const el = document.getElementById('project-list');
+  document.getElementById('proj-count').textContent = projects.length;
+  if (!projects.length) {
+    el.innerHTML = '<div class="empty-state">NO PROJECTS ADDED YET</div>';
+    return;
+  }
+  el.innerHTML = projects.map(p => `
+    <div class="project-item">
+      <div class="project-id">P${p.id}</div>
+      <div class="project-info">
+        <div class="project-name">${p.name}</div>
+        <div class="project-meta">Day ${p.start}–${p.end} · ${p.cost} BW/day · ${p.end - p.start + 1} days</div>
+      </div>
+      <div class="project-reward">$${p.reward}</div>
+      <button class="btn btn-danger" onclick="removeProject(${p.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+// ─── SOLVER ───────────────────────────────────────────────────────────────────
+/*
+  Algorithm: Bitmask DP over subsets of projects.
+  
+  For each subset of projects, we check feasibility:
+    - Compute daily bandwidth usage across all days in the schedule.
+    - Simulate capacity day-by-day with fatigue carry-over.
+    
+  If feasible, track total reward. Return max-reward feasible subset.
+  
+  For larger N, we use a greedy DP approach with day-by-day capacity simulation.
+  We use bitmask DP for N ≤ 20, and a greedy/pruning approach for larger sets.
+*/
+
+function computeDayCapacity(dayUsage, totalDays) {
+  // Returns true if the day-by-day usage is feasible under fatigue rules
+  let capacity = 100;
+  for (let d = 1; d <= totalDays; d++) {
+    const used = dayUsage[d] || 0;
+    if (used > capacity) return { feasible: false, caps: null };
+    const remaining = capacity - used;
+    capacity = Math.min(100, remaining + 80);
+  }
+  return { feasible: true };
+}
+
+function getDayUsage(subset) {
+  // subset = array of project objects
+  const usage = {};
+  for (const p of subset) {
+    for (let d = p.start; d <= p.end; d++) {
+      usage[d] = (usage[d] || 0) + p.cost;
+    }
+  }
+  return usage;
+}
+
+function solve() {
+  if (!projects.length) { alert('Add at least one project!'); return; }
+
+  const N = projects.length;
+  const totalDays = Math.max(...projects.map(p => p.end));
+
+  let bestReward = 0;
+  let bestMask = 0;
+
+  if (N <= 20) {
+    // Bitmask DP: enumerate all 2^N subsets
+    for (let mask = 0; mask < (1 << N); mask++) {
+      const subset = [];
+      let reward = 0;
+      for (let i = 0; i < N; i++) {
+        if (mask & (1 << i)) {
+          subset.push(projects[i]);
+          reward += projects[i].reward;
+        }
+      }
+      if (reward <= bestReward) continue; // prune
+
+      const usage = getDayUsage(subset);
+      const { feasible } = computeDayCapacity(usage, totalDays);
+
+      if (feasible && reward > bestReward) {
+        bestReward = reward;
+        bestMask = mask;
+      }
+    }
+  } else {
+    // Greedy fallback for large N: sort by reward density, add greedily
+    const sorted = [...projects].sort((a,b) => {
+      const densA = a.reward / ((a.end - a.start + 1) * a.cost);
+      const densB = b.reward / ((b.end - b.start + 1) * b.cost);
+      return densB - densA;
+    });
+    let chosen = [];
+    for (const p of sorted) {
+      const trial = [...chosen, p];
+      const usage = getDayUsage(trial);
+      const { feasible } = computeDayCapacity(usage, totalDays);
+      if (feasible) chosen = trial;
+    }
+    bestReward = chosen.reduce((s,p) => s + p.reward, 0);
+    bestMask = projects.reduce((mask, p, i) => chosen.includes(p) ? mask | (1<<i) : mask, 0);
+  }
+
+  // Extract accepted/rejected
+  const accepted = [];
+  const rejected = [];
+  for (let i = 0; i < N; i++) {
+    if (bestMask & (1 << i)) accepted.push(projects[i]);
+    else rejected.push(projects[i]);
+  }
+
+  // Build final day usage for timeline
+  const finalUsage = getDayUsage(accepted);
+
+  // Simulate capacities day by day
+  const dayCaps = {};
+  let cap = 100;
+  for (let d = 1; d <= totalDays; d++) {
+    const used = finalUsage[d] || 0;
+    dayCaps[d] = { used, cap };
+    const remaining = cap - used;
+    cap = Math.min(100, remaining + 80);
+  }
+
+  renderResults(accepted, rejected, bestReward, dayCaps, totalDays);
+}
+
+function renderResults(accepted, rejected, totalEarnings, dayCaps, totalDays) {
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('total-earnings').textContent = `$${totalEarnings.toLocaleString()}`;
+  document.getElementById('stat-accepted').textContent = accepted.length;
+  document.getElementById('stat-rejected').textContent = rejected.length;
+  document.getElementById('stat-days').textContent = totalDays;
+
+  // Accepted chips
+  const accEl = document.getElementById('accepted-list');
+  accEl.innerHTML = accepted.length
+    ? accepted.map(p => `<div class="accepted-chip">P${p.id}: ${p.name} ($${p.reward})</div>`).join('')
+    : '<span style="color:var(--muted);font-size:0.75rem;">None accepted</span>';
+
+  // Rejected chips
+  const rejEl = document.getElementById('rejected-list');
+  rejEl.innerHTML = rejected.length
+    ? rejected.map(p => `<div class="rejected-chip">P${p.id}: ${p.name}</div>`).join('')
+    : '<span style="color:var(--muted);font-size:0.75rem;">None rejected</span>';
+
+  // Timeline
+  const barsEl = document.getElementById('timeline-bars');
+  let html = '';
+  for (let d = 1; d <= totalDays; d++) {
+    const { used, cap } = dayCaps[d];
+    const pct = cap > 0 ? (used / cap) * 100 : 0;
+    const cls = pct < 60 ? 'safe' : pct < 85 ? 'warn' : 'critical';
+    const projs = accepted.filter(p => p.start <= d && d <= p.end);
+    const chips = projs.map(p => `<div class="day-chip">P${p.id}</div>`).join('');
+    html += `
+      <div class="day-row">
+        <div class="day-label">Day ${d}</div>
+        <div class="bar-track">
+          <div class="bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div>
+        </div>
+        <div class="bar-text">${used}/${cap}</div>
+        <div class="day-projects">${chips}</div>
+      </div>`;
+  }
+  barsEl.innerHTML = html || '<div class="empty-state">NO DAYS TO DISPLAY</div>';
+
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── Load Example ─────────────────────────────────────────────────────────────
+(function loadExample() {
+  const examples = [
+    { name:'Brand Campaign', start:1, end:3, cost:40, reward:900 },
+    { name:'App Development', start:2, end:5, cost:50, reward:1400 },
+    { name:'Consulting Gig', start:1, end:2, cost:30, reward:400 },
+    { name:'Content Sprint', start:4, end:6, cost:35, reward:750 },
+    { name:'Pitch Deck', start:3, end:4, cost:45, reward:600 },
+  ];
+  examples.forEach(e => {
+    projects.push({ id: nextId++, ...e });
+  });
+  renderList();
+})();
+</script>
+</body>
+</html>
